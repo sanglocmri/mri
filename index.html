@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phiếu Sàng Lọc An Toàn MRI - BV ĐHYD Buôn Ma Thuột</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+        font-family: "Times New Roman", Times, serif !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #print-area {
+        display: block !important;
+      }
+    }
+    #print-area {
+      display: none;
+    }
+    canvas#signature-pad {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen font-sans">
+
+  <!-- THANH ĐIỀU HƯỚNG (Ẩn khi bệnh nhân quét QR) -->
+  <nav id="ktv-nav" class="no-print bg-blue-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="font-bold text-sm sm:text-base tracking-wide">BỆNH VIỆN ĐẠI HỌC Y DƯỢC BUÔN MA THUỘT</div>
+        <div class="text-xs text-blue-200">KHOA CHẨN ĐOÁN HÌNH ẢNH • HỆ THỐNG SÀNG LỌC MRI</div>
+      </div>
+      <div class="flex gap-2 text-sm">
+        <button onclick="switchTab('ktv')" id="tab-ktv" class="px-3 py-1.5 rounded-lg font-medium bg-white text-blue-900 shadow">
+          Danh sách KTV (<span id="badge-count">0</span>)
+        </button>
+        <button onclick="switchTab('patient')" id="tab-patient" class="px-3 py-1.5 rounded-lg font-medium bg-blue-800 hover:bg-blue-700 text-white">
+          Form Bệnh nhân
+        </button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="px-3 py-1.5 rounded-lg font-medium bg-blue-800 hover:bg-blue-700 text-white">
+          Mã QR & Cài đặt
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== 1. GIAO DIỆN BỆNH NHÂN ==================== -->
+  <main id="view-patient" class="no-print max-w-2xl mx-auto p-4 sm:p-6 hidden">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
+      <!-- Header Bệnh viện -->
+      <div class="bg-blue-900 text-white p-5 text-center">
+        <p class="text-xs sm:text-sm font-semibold tracking-wider uppercase text-blue-200">
+          BỆNH VIỆN ĐẠI HỌC Y DƯỢC BUÔN MA THUỘT
+        </p>
+        <p class="text-xs text-blue-300 uppercase mb-2">
+          KHOA CHẨN ĐOÁN HÌNH ẢNH / DEPARTMENT OF DIAGNOSTIC IMAGING
+        </p>
+        <h1 class="text-xl sm:text-2xl font-bold mt-1">PHIẾU SÀNG LỌC AN TOÀN MRI</h1>
+        <p class="text-sm italic text-blue-100">MRI Safety Screening Questionnaire</p>
+      </div>
+
+      <form id="mri-form" class="p-5 sm:p-6 space-y-6">
+        <!-- Cảnh báo chống chỉ định MRI -->
+        <div class="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-xl text-sm text-red-900 space-y-1.5">
+          <p class="font-bold text-red-700 uppercase">⚠️ CẢNH BÁO AN TOÀN & CHỐNG CHỈ ĐỊNH MRI</p>
+          <p>Phòng chụp MRI có <b>từ trường rất mạnh, hoạt động liên tục 24/24</b>. Tuyệt đối <b>KHÔNG</b> tự ý vào phòng chụp nếu bạn có: máy tạo nhịp tim, máy khử rung tim, ốc tai điện tử, kẹp phình mạch não kim loại, hoặc dị vật kim loại trong mắt/cơ thể.</p>
+          <p>Vui lòng tháo bỏ toàn bộ trang sức, đồng hồ, điện thoại, chìa khóa, thẻ từ, tiền xu trước khi vào phòng chụp.</p>
+          <p class="italic text-xs text-red-800 pt-1"><b>MRI Safety Warning:</b> Strong magnetic field is ALWAYS ON. Do NOT enter if you have pacemakers, cochlear implants, aneurysm clips, or metallic fragments. Remove all metallic objects before entering.</p>
+        </div>
+
+        <!-- Thông tin hành chính -->
+        <div class="space-y-4">
+          <h2 class="font-bold text-blue-900 border-b pb-1 text-base">
+            I. THÔNG TIN BỆNH NHÂN <span class="font-normal italic text-slate-500 text-sm">/ Patient Information</span>
+          </h2>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">
+              Họ và tên bệnh nhân <span class="font-normal italic text-slate-500">/ Full Name</span> <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="p-name" required placeholder="VD: Nguyễn Văn A"
+              class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-base uppercase" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">
+              Số điện thoại <span class="font-normal italic text-slate-500">/ Phone Number</span> <span class="text-red-500">*</span>
+            </label>
+            <input type="tel" id="p-phone" required placeholder="VD: 0912345678"
+              class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-base" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">
+                Năm sinh <span class="font-normal italic text-slate-500">/ Year of Birth</span> <span class="text-red-500">*</span>
+              </label>
+              <input type="number" id="p-yob" required min="1900" max="2030" placeholder="VD: 1985"
+                class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-base" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">
+                Cân nặng ước lượng (kg) <span class="font-normal italic text-slate-500">/ Estimated Weight</span> <span class="text-red-500">*</span>
+              </label>
+              <input type="number" id="p-weight" required min="1" max="300" step="0.5" placeholder="VD: 60"
+                class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none text-base" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Câu hỏi sàng lọc -->
+        <div class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+            <h2 class="font-bold text-blue-900 text-base">
+              II. CÂU HỎI SÀNG LỌC <span class="font-normal italic text-slate-500 text-sm">/ Screening Questions</span>
+            </h2>
+            <div class="flex gap-2">
+              <button type="button" onclick="speakAllQuestions()"
+                class="px-3 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-900 text-xs font-bold transition">
+                🔊 Nghe tất cả
+              </button>
+              <button type="button" onclick="stopSpeaking()"
+                class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition">
+                ⏹ Dừng
+              </button>
+            </div>
+          </div>
+          <div id="questions-container" class="space-y-4"></div>
+        </div>
+
+        <!-- Nút gửi -->
+        <div class="pt-2">
+          <button type="submit" id="btn-submit"
+            class="w-full bg-blue-700 hover:bg-blue-800 active:scale-[0.99] text-white font-bold py-4 rounded-xl shadow-md text-lg transition">
+            GỬI THÔNG TIN / SUBMIT
+          </button>
+        </div>
+
+        <!-- Hotline hỗ trợ (Chỉ hiển thị trên form) -->
+        <div class="text-center pt-3 border-t border-slate-200 text-sm text-slate-600">
+          Số điện thoại hỗ trợ / <i>Support Hotline</i>:
+          <a href="tel:0886685777" class="font-bold text-blue-700 text-base hover:underline">0886685777</a>
+        </div>
+      </form>
+
+      <!-- Màn hình thông báo gửi thành công -->
+      <div id="submit-success" class="hidden p-8 text-center space-y-4">
+        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-3xl font-bold">✓</div>
+        <h3 class="text-xl font-bold text-green-700">Đã gửi thông tin thành công!</h3>
+        <p class="text-slate-600 text-sm">
+          Thông tin của bạn đã được chuyển tới máy tính phòng chụp MRI.<br/>
+          Vui lòng đợi Kỹ thuật viên gọi tên để đối chiếu và ký xác nhận.<br/>
+          <span class="italic text-slate-500">(Your information has been submitted. Please wait for the technician to call your name for verification and signature.)</span>
+        </p>
+        <button onclick="resetPatientForm()" class="mt-4 px-5 py-2.5 bg-slate-200 hover:bg-slate-300 rounded-xl text-sm font-semibold text-slate-700">
+          Điền cho bệnh nhân khác / Fill another form
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== 2. GIAO DIỆN KTV PHÒNG MRI ==================== -->
+  <main id="view-ktv" class="no-print max-w-5xl mx-auto p-4 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">Danh sách bệnh nhân chờ ký & chụp MRI</h2>
+        <p class="text-xs text-slate-500" id="sync-status">Chế độ lưu cục bộ (Trên máy tính này)</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="loadPatients()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-sm font-medium shadow-sm">
+          ↻ Làm mới
+        </button>
+        <button onclick="clearAllPatients()" class="px-3 py-2 bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 rounded-lg text-sm font-medium">
+          Xóa danh sách cuối ngày
+        </button>
+      </div>
+    </div>
+
+    <div id="patient-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+    <div id="empty-state" class="hidden bg-white rounded-2xl p-10 text-center border border-dashed border-slate-300 text-slate-500">
+      <p class="text-base font-medium">Chưa có bệnh nhân nào gửi thông tin.</p>
+      <p class="text-sm mt-1">Bệnh nhân quét mã QR ở tab <b>"Mã QR & Cài đặt"</b> hoặc bạn có thể nhập thử ở tab <b>"Form Bệnh nhân"</b>.</p>
+    </div>
+  </main>
+
+  <!-- ==================== 3. GIAO DIỆN MÃ QR & CÀI ĐẶT ==================== -->
+  <main id="view-settings" class="no-print max-w-2xl mx-auto p-4 sm:p-6 hidden space-y-6">
+    <div class="bg-white rounded-2xl shadow p-6 text-center space-y-4 border border-slate-200">
+      <h2 class="text-lg font-bold text-blue-900">Mã QR dành cho Bệnh nhân quét</h2>
+      <p class="text-sm text-slate-600">Bệnh nhân dùng Camera hoặc Zalo quét mã này để mở thẳng tờ khai trên điện thoại.</p>
+      <div id="qrcode" class="flex justify-center p-4 bg-white inline-block rounded-xl border border-slate-200 mx-auto"></div>
+      <div class="text-xs text-slate-500 break-all bg-slate-50 p-2 rounded border" id="qr-url-display"></div>
+      <button type="button" onclick="downloadQR()"
+        class="px-5 py-2.5 bg-green-700 hover:bg-green-800 text-white rounded-xl text-sm font-bold shadow transition">
+        ⬇️ Tải ảnh mã QR để in (PNG)
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow p-6 space-y-4 border border-slate-200">
+      <h2 class="text-lg font-bold text-blue-900">Cài đặt hệ thống</h2>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Tên Kỹ thuật viên mặc định (in trên phiếu PDF)</label>
+        <input type="text" id="setting-ktv-name" placeholder="VD: CN. Nguyễn Văn B"
+          class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">
+          Link Firebase Realtime Database (Để đồng bộ Điện thoại → Máy tính)
+        </label>
+        <input type="url" id="setting-firebase-url" placeholder="https://ten-du-an-default-rtdb.asia-southeast1.firebasedatabase.app"
+          class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+        <p class="text-xs text-slate-500 mt-1">Để trống nếu bạn chỉ muốn chạy thử trên cùng 1 máy tính.</p>
+      </div>
+      <button onclick="saveSettings()" class="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm font-semibold">
+        Lưu cài đặt
+      </button>
+    </div>
+  </main>
+
+  <!-- ==================== MODAL ĐỐI CHIẾU & KÝ TÊN ==================== -->
+  <div id="sign-modal" class="no-print fixed inset-0 bg-black/60 hidden items-center justify-center p-3 z-50 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="bg-blue-900 text-white px-5 py-4 flex justify-between items-center sticky top-0">
+        <div>
+          <h3 class="font-bold text-lg" id="modal-p-name">Tên Bệnh Nhân</h3>
+          <p class="text-xs text-blue-200" id="modal-p-meta">Năm sinh • Cân nặng • SĐT</p>
+        </div>
+        <button onclick="closeModal()" class="text-white/80 hover:text-white text-2xl font-bold leading-none">×</button>
+      </div>
+
+      <div class="p-5 space-y-5">
+        <div>
+          <h4 class="font-bold text-sm text-slate-700 mb-2 uppercase">Kết quả sàng lọc (KTV đối chiếu lại với bệnh nhân):</h4>
+          <div id="modal-answers" class="space-y-2 text-sm"></div>
+        </div>
+
+        <div class="border-t pt-4">
+          <div class="flex justify-between items-center mb-2">
+            <label class="font-bold text-sm text-blue-900">BỆNH NHÂN / NGƯỜI NHÀ KÝ XÁC NHẬN:</label>
+            <button type="button" onclick="clearSignature()" class="text-xs text-red-600 hover:underline font-medium">
+              Xóa ký lại
+            </button>
+          </div>
+          <div class="border-2 border-dashed border-slate-400 rounded-xl bg-slate-50 overflow-hidden">
+            <canvas id="signature-pad" class="w-full h-44 cursor-crosshair"></canvas>
+          </div>
+          <p class="text-xs text-slate-500 mt-1 text-center">Ký trực tiếp bằng chuột hoặc ngón tay trên màn hình cảm ứng</p>
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-3 pt-2 border-t">
+          <button onclick="closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-sm">
+            Đóng
+          </button>
+          <button onclick="saveSignatureAndExportPDF()" class="px-5 py-2.5 rounded-xl bg-green-700 hover:bg-green-800 text-white font-bold text-sm shadow">
+            🖨️ Lưu chữ ký & Xuất file PDF (A4)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MẪU PHIẾU IN / XUẤT PDF KHỔ A4 ==================== -->
+  <div id="print-area" class="text-black text-[13pt] leading-snug">
+    <div class="flex justify-between items-start border-b-2 border-black pb-2 mb-4">
+      <div class="text-center w-3/5">
+        <div class="font-bold text-[11pt] uppercase">BỆNH VIỆN ĐẠI HỌC Y DƯỢC BUÔN MA THUỘT</div>
+        <div class="font-bold text-[11pt] uppercase">KHOA CHẨN ĐOÁN HÌNH ẢNH</div>
+        <div class="text-[9.5pt] italic">Buon Ma Thuot University Medical Center - Dept. of Diagnostic Imaging</div>
+      </div>
+      <div class="text-right w-2/5 text-[10pt]">
+        <div><b>Mẫu sàng lọc MRI</b></div>
+        <div id="print-time">Ngày: ...</div>
+      </div>
+    </div>
+
+    <div class="text-center mb-4">
+      <h1 class="font-bold text-[15pt] uppercase">PHIẾU SÀNG LỌC AN TOÀN CỘNG HƯỞNG TỪ (MRI)</h1>
+      <div class="italic text-[11pt]">MRI Safety Screening & Consent Form</div>
+    </div>
+
+    <div class="mb-4 text-[12pt] space-y-1.5">
+      <div class="flex justify-between">
+        <div><b>Họ và tên bệnh nhân</b> <i>(Full Name)</i>: <span id="print-name" class="font-bold uppercase"></span></div>
+      </div>
+      <div class="flex flex-wrap gap-8">
+        <div><b>Năm sinh</b> <i>(Year of Birth)</i>: <span id="print-yob"></span></div>
+        <div><b>Cân nặng ước lượng</b> <i>(Est. Weight)</i>: <span id="print-weight"></span> kg</div>
+        <div><b>SĐT</b> <i>(Phone)</i>: <span id="print-phone"></span></div>
+      </div>
+    </div>
+
+    <table class="w-full border-collapse border border-black text-[11pt] mb-4">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border border-black p-1.5 w-8 text-center">STT</th>
+          <th class="border border-black p-1.5 text-left">Nội dung sàng lọc / <i>Screening Questions</i></th>
+          <th class="border border-black p-1.5 w-14 text-center">Có<br/><i class="font-normal text-[9.5pt]">Yes</i></th>
+          <th class="border border-black p-1.5 w-16 text-center">Không<br/><i class="font-normal text-[9.5pt]">No</i></th>
+          <th class="border border-black p-1.5 w-40 text-left">Chi tiết (nếu có)<br/><i class="font-normal text-[9.5pt]">Details (if yes)</i></th>
+        </tr>
+      </thead>
+      <tbody id="print-table-body"></tbody>
+    </table>
+
+    <div class="text-[11pt] mb-6 text-justify">
+      <p><b>Cam kết của bệnh nhân / người nhà:</b> Tôi xin cam đoan những thông tin khai báo trên đây là hoàn toàn đúng sự thật và đã được nhân viên y tế giải thích rõ về các quy định an toàn trước khi vào phòng chụp Cộng hưởng từ (MRI).</p>
+      <p class="italic text-[10pt] mt-1"><b>Patient / Guardian Declaration:</b> I certify that the information provided above is true and accurate to the best of my knowledge, and I have been informed of the MRI safety guidelines.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 text-center text-[11pt]">
+      <div>
+        <div class="font-bold">KỸ THUẬT VIÊN THỰC HIỆN</div>
+        <div class="italic text-[10pt]">(MRI Technologist)</div>
+        <div class="h-24"></div>
+        <div class="font-bold" id="print-ktv-name"></div>
+      </div>
+      <div>
+        <div class="font-bold">BỆNH NHÂN / NGƯỜI NHÀ KÝ TÊN</div>
+        <div class="italic text-[10pt]">(Patient / Guardian Signature)</div>
+        <div class="h-24 flex items-center justify-center">
+          <img id="print-signature-img" class="max-h-24 max-w-full object-contain" alt="Chữ ký bệnh nhân" />
+        </div>
+        <div class="font-bold uppercase" id="print-sign-name"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CẤU HÌNH 4 CÂU HỎI SONG NGỮ ====================
+    const QUESTIONS = [
+      {
+        id: "q1",
+        vi: "Bạn đã chụp Cộng hưởng từ (MRI) lần nào chưa?",
+        en: "Have you ever had an MRI scan before?",
+        placeholder: "Nếu có, ghi rõ chụp bộ phận nào / khi nào (If yes, specify body part / when)...",
+        highRisk: false
+      },
+      {
+        id: "q2",
+        vi: "Từ trước đến nay bạn đã từng phẫu thuật cấy ghép thiết bị điện tử hoặc kim loại trong cơ thể hay không? Nếu có, ghi rõ cụ thể bộ phận nào và cấy ghép gì?",
+        en: "Have you ever had surgery to implant any electronic or metallic devices in your body? If yes, please specify the body part and the type of implant.",
+        placeholder: "Ghi rõ bộ phận và loại thiết bị cấy ghép (Specify body part & implant)...",
+        highRisk: true
+      },
+      {
+        id: "q3",
+        vi: "Trong cơ thể bạn có mảnh kim khí, mảnh bom đạn hay không? Nếu có, ghi rõ vị trí.",
+        en: "Do you have any metal fragments, shrapnel, or bullets in your body? If yes, please specify the location.",
+        placeholder: "Ghi rõ vị trí mảnh kim khí/đạn (Specify location)...",
+        highRisk: true
+      },
+      {
+        id: "q4",
+        vi: "Bạn có răng giả, máy trợ thính hoặc các thiết bị kim loại, điện tử hỗ trợ trên cơ thể hay không? Nếu có, ghi rõ.",
+        en: "Do you have dentures, hearing aids, or any other metallic/electronic assistive devices on your body? If yes, please specify.",
+        placeholder: "Ghi rõ loại thiết bị (Specify device)...",
+        highRisk: true
+      }
+    ];
+
+    let patients = [];
+    let currentPatientId = null;
+    let pollInterval = null;
+
+    // ==================== TÍNH NĂNG VOICE ĐỌC CÂU HỎI ====================
+    function speakText(text) {
+      if (!("speechSynthesis" in window)) {
+        alert("Trình duyệt này không hỗ trợ đọc giọng nói. Vui lòng mở bằng Chrome hoặc Safari.");
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "vi-VN";
+      utter.rate = 1.15;
+      window.speechSynthesis.speak(utter);
+    }
+
+    function speakQuestion(idx) {
+      const q = QUESTIONS[idx];
+      if (!q) return;
+      speakText(`Câu hỏi số ${idx + 1}. ${q.vi}`);
+    }
+
+    function speakAllQuestions() {
+      const fullText = QUESTIONS.map((q, idx) => `Câu hỏi số ${idx + 1}. ${q.vi}`).join(" ... ");
+      speakText(fullText);
+    }
+
+    function stopSpeaking() {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    // ==================== KHỞI TẠO ỨNG DỤNG ====================
+    window.addEventListener("DOMContentLoaded", () => {
+      renderQuestions();
+      loadSettingsUI();
+      initSignaturePad();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("fb")) {
+        localStorage.setItem("mri_firebase_url", params.get("fb"));
+      }
+
+      if (params.get("mode") === "patient") {
+        document.getElementById("ktv-nav").classList.add("hidden");
+        document.getElementById("view-ktv").classList.add("hidden");
+        document.getElementById("view-patient").classList.remove("hidden");
+      } else {
+        switchTab("ktv");
+        loadPatients();
+        pollInterval = setInterval(loadPatients, 4000);
+      }
+    });
+
+    // ==================== RENDER CÂU HỎI FORM BỆNH NHÂN ====================
+    function renderQuestions() {
+      const container = document.getElementById("questions-container");
+      container.innerHTML = QUESTIONS.map((q, idx) => `
+        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold text-slate-800 text-base">${idx + 1}. ${q.vi}</p>
+              <p class="text-sm italic text-slate-500 mt-0.5">${q.en}</p>
+            </div>
+            <button type="button" onclick="speakQuestion(${idx})"
+              class="shrink-0 px-3 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 active:scale-95 text-blue-900 text-xs font-bold transition shadow-sm">
+              🔊 Nghe
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="${q.id}" value="KHÔNG" required onchange="toggleDetail('${q.id}', false)" class="peer sr-only" />
+              <div class="text-center py-3 rounded-xl border-2 border-slate-300 bg-white font-bold text-slate-700 peer-checked:border-green-600 peer-checked:bg-green-50 peer-checked:text-green-700 transition">
+                KHÔNG / NO
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="${q.id}" value="CÓ" required onchange="toggleDetail('${q.id}', true)" class="peer sr-only" />
+              <div class="text-center py-3 rounded-xl border-2 border-slate-300 bg-white font-bold text-slate-700 peer-checked:border-red-600 peer-checked:bg-red-50 peer-checked:text-red-700 transition">
+                CÓ / YES
+              </div>
+            </label>
+          </div>
+          <div id="detail-wrap-${q.id}">
+            <input type="text" id="detail-${q.id}" placeholder="${q.placeholder}"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-400 focus:outline-none text-sm" />
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function toggleDetail(qid, show) {
+      const input = document.getElementById(`detail-${qid}`);
+      if (show) {
+        input.focus();
+      } else {
+        input.value = "";
+      }
+    }
+
+    // ==================== GỬI FORM BỆNH NHÂN ====================
+    document.getElementById("mri-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      stopSpeaking();
+      const btn = document.getElementById("btn-submit");
+      btn.disabled = true;
+      btn.textContent = "Đang gửi...";
+
+      const answers = {};
+      let hasWarning = false;
+
+      QUESTIONS.forEach(q => {
+        const val = document.querySelector(`input[name="${q.id}"]:checked`).value;
+        const detail = document.getElementById(`detail-${q.id}`).value.trim();
+        answers[q.id] = { answer: val, detail };
+        if (q.highRisk && val === "CÓ") hasWarning = true;
+      });
+
+      const record = {
+        id: "BN_" + Date.now(),
+        name: document.getElementById("p-name").value.trim().toUpperCase(),
+        phone: document.getElementById("p-phone").value.trim(),
+        yob: document.getElementById("p-yob").value.trim(),
+        weight: document.getElementById("p-weight").value.trim(),
+        answers,
+        hasWarning,
+        signed: false,
+        signature: "",
+        timestamp: new Date().toLocaleString("vi-VN")
+      };
+
+      await saveRecord(record);
+
+      document.getElementById("mri-form").classList.add("hidden");
+      document.getElementById("submit-success").classList.remove("hidden");
+      btn.disabled = false;
+      btn.textContent = "GỬI THÔNG TIN / SUBMIT";
+    });
+
+    function resetPatientForm() {
+      stopSpeaking();
+      document.getElementById("mri-form").reset();
+      document.getElementById("submit-success").classList.add("hidden");
+      document.getElementById("mri-form").classList.remove("hidden");
+    }
+
+    // ==================== LƯU TRỮ (LOCALSTORAGE HOẶC FIREBASE) ====================
+    function getFirebaseUrl() {
+      const url = (localStorage.getItem("mri_firebase_url") || "").trim();
+      return url.replace(/\/+$/, "");
+    }
+
+    async function saveRecord(record) {
+      const fbUrl = getFirebaseUrl();
+      if (fbUrl) {
+        try {
+          await fetch(`${fbUrl}/mri_patients/${record.id}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(record)
+          });
+          return;
+        } catch (err) {
+          alert("Lỗi kết nối Firebase, đã lưu tạm trên máy.");
+        }
+      }
+      const list = JSON.parse(localStorage.getItem("mri_patients") || "[]");
+      const idx = list.findIndex(p => p.id === record.id);
+      if (idx >= 0) list[idx] = record;
+      else list.unshift(record);
+      localStorage.setItem("mri_patients", JSON.stringify(list));
+    }
+
+    async function loadPatients() {
+      const fbUrl = getFirebaseUrl();
+      const statusEl = document.getElementById("sync-status");
+
+      if (fbUrl) {
+        statusEl.textContent = "🟢 Đang đồng bộ trực tuyến qua Firebase";
+        try {
+          const res = await fetch(`${fbUrl}/mri_patients.json`);
+          const data = await res.json();
+          patients = data ? Object.values(data).sort((a, b) => b.id.localeCompare(a.id)) : [];
+        } catch (err) {
+          statusEl.textContent = "🔴 Lỗi kết nối Firebase - Kiểm tra lại link ở mục Cài đặt";
+        }
+      } else {
+        statusEl.textContent = "🟡 Chế độ lưu cục bộ trên máy này (Chưa gắn Firebase)";
+        patients = JSON.parse(localStorage.getItem("mri_patients") || "[]");
+      }
+      renderPatientList();
+    }
+
+    async function clearAllPatients() {
+      if (!confirm("Bạn có chắc muốn xóa toàn bộ danh sách bệnh nhân hôm nay?")) return;
+      const fbUrl = getFirebaseUrl();
+      if (fbUrl) {
+        await fetch(`${fbUrl}/mri_patients.json`, { method: "DELETE" });
+      }
+      localStorage.removeItem("mri_patients");
+      patients = [];
+      renderPatientList();
+    }
+
+    // ==================== HIỂN THỊ DANH SÁCH KTV ====================
+    function renderPatientList() {
+      document.getElementById("badge-count").textContent = patients.length;
+      const listEl = document.getElementById("patient-list");
+      const emptyEl = document.getElementById("empty-state");
+
+      if (patients.length === 0) {
+        listEl.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+      emptyEl.classList.add("hidden");
+
+      listEl.innerHTML = patients.map(p => `
+        <div onclick="openSignModal('${p.id}')"
+          class="cursor-pointer bg-white rounded-2xl p-4 shadow-sm border-2 transition hover:shadow-md ${p.hasWarning ? 'border-red-500 bg-red-50/40' : 'border-slate-200 hover:border-blue-400'}">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <h3 class="font-bold text-lg text-slate-900">${p.name}</h3>
+              <p class="text-sm text-slate-600">NS: <b>${p.yob}</b> • Cân nặng: <b>${p.weight} kg</b> • SĐT: <b>${p.phone || "—"}</b></p>
+              <p class="text-xs text-slate-400 mt-1">Gửi lúc: ${p.timestamp}</p>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              ${p.hasWarning
+                ? `<span class="px-2.5 py-1 rounded-full bg-red-600 text-white text-xs font-bold animate-pulse">⚠️ CẢNH BÁO KIM LOẠI</span>`
+                : `<span class="px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold">✓ An toàn cơ bản</span>`
+              }
+              ${p.signed
+                ? `<span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">Đã ký tên</span>`
+                : `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">Chờ ký</span>`
+              }
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // ==================== MODAL KÝ TÊN & XUẤT PDF ====================
+    function openSignModal(id) {
+      const p = patients.find(x => x.id === id);
+      if (!p) return;
+      currentPatientId = id;
+
+      document.getElementById("modal-p-name").textContent = p.name;
+      document.getElementById("modal-p-meta").textContent = `Năm sinh: ${p.yob} • Cân nặng: ${p.weight} kg • SĐT: ${p.phone || "—"} • Gửi lúc: ${p.timestamp}`;
+
+      const ansEl = document.getElementById("modal-answers");
+      ansEl.innerHTML = QUESTIONS.map((q, idx) => {
+        const a = p.answers[q.id] || { answer: "KHÔNG", detail: "" };
+        const isDanger = q.highRisk && a.answer === "CÓ";
+        return `
+          <div class="p-3 rounded-xl border ${isDanger ? 'bg-red-50 border-red-400' : 'bg-slate-50 border-slate-200'}">
+            <div class="flex justify-between items-start gap-2">
+              <div class="font-medium text-slate-800">${idx + 1}. ${q.vi}</div>
+              <span class="shrink-0 px-2.5 py-0.5 rounded font-bold text-xs ${a.answer === 'CÓ' ? (q.highRisk ? 'bg-red-600 text-white' : 'bg-blue-600 text-white') : 'bg-green-100 text-green-800'}">
+                ${a.answer}
+              </span>
+            </div>
+            ${a.detail ? `<div class="mt-1 text-red-700 font-semibold">→ Chi tiết: ${a.detail}</div>` : ""}
+          </div>
+        `;
+      }).join("");
+
+      const modal = document.getElementById("sign-modal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      setTimeout(() => {
+        resizeCanvas();
+        if (p.signature) {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          img.src = p.signature;
+        }
+      }, 50);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById("sign-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      clearSignature();
+    }
+
+    async function saveSignatureAndExportPDF() {
+      const p = patients.find(x => x.id === currentPatientId);
+      if (!p) return;
+
+      const sigDataUrl = canvas.toDataURL("image/png");
+      p.signature = sigDataUrl;
+      p.signed = true;
+      await saveRecord(p);
+      renderPatientList();
+
+      document.getElementById("print-name").textContent = p.name;
+      document.getElementById("print-sign-name").textContent = p.name;
+      document.getElementById("print-yob").textContent = p.yob;
+      document.getElementById("print-weight").textContent = p.weight;
+      document.getElementById("print-phone").textContent = p.phone || "";
+      document.getElementById("print-time").textContent = "Ngày: " + p.timestamp;
+      document.getElementById("print-ktv-name").textContent = localStorage.getItem("mri_ktv_name") || "";
+      document.getElementById("print-signature-img").src = sigDataUrl;
+
+      const tbody = document.getElementById("print-table-body");
+      tbody.innerHTML = QUESTIONS.map((q, idx) => {
+        const a = p.answers[q.id] || { answer: "KHÔNG", detail: "" };
+        const isYes = a.answer === "CÓ";
+        return `
+          <tr>
+            <td class="border border-black p-1.5 text-center font-bold">${idx + 1}</td>
+            <td class="border border-black p-1.5">
+              <div>${q.vi}</div>
+              <div class="italic text-[9.5pt] text-gray-700">${q.en}</div>
+            </td>
+            <td class="border border-black p-1.5 text-center text-[15pt]">${isYes ? "☑" : "☐"}</td>
+            <td class="border border-black p-1.5 text-center text-[15pt]">${!isYes ? "☑" : "☐"}</td>
+            <td class="border border-black p-1.5 text-[10.5pt]">${a.detail || ""}</td>
+          </tr>
+        `;
+      }).join("");
+
+      closeModal();
+      setTimeout(() => window.print(), 200);
+    }
+
+    // ==================== CHỮ KÝ CANVAS ====================
+    let canvas, ctx, drawing = false;
+    function initSignaturePad() {
+      canvas = document.getElementById("signature-pad");
+      ctx = canvas.getContext("2d");
+
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      };
+
+      const start = (e) => {
+        drawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      };
+      const move = (e) => {
+        if (!drawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#0f172a";
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      };
+      const end = () => { drawing = false; };
+
+      canvas.addEventListener("mousedown", start);
+      canvas.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", end);
+      canvas.addEventListener("touchstart", start, { passive: false });
+      canvas.addEventListener("touchmove", move, { passive: false });
+      window.addEventListener("touchend", end);
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+
+    function clearSignature() {
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // ==================== CHUYỂN TAB & MÃ QR ====================
+    function switchTab(tab) {
+      stopSpeaking();
+      ["ktv", "patient", "settings"].forEach(t => {
+        document.getElementById(`view-${t}`).classList.toggle("hidden", t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium bg-white text-blue-900 shadow";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium bg-blue-800 hover:bg-blue-700 text-white";
+        }
+      });
+      if (tab === "ktv") loadPatients();
+      if (tab === "settings") generateQR();
+    }
+
+    function loadSettingsUI() {
+      document.getElementById("setting-ktv-name").value = localStorage.getItem("mri_ktv_name") || "";
+      document.getElementById("setting-firebase-url").value = localStorage.getItem("mri_firebase_url") || "";
+    }
+
+    function saveSettings() {
+      localStorage.setItem("mri_ktv_name", document.getElementById("setting-ktv-name").value.trim());
+      localStorage.setItem("mri_firebase_url", document.getElementById("setting-firebase-url").value.trim());
+      alert("Đã lưu cài đặt!");
+      generateQR();
+      loadPatients();
+    }
+
+    function generateQR() {
+      const qrBox = document.getElementById("qrcode");
+      qrBox.innerHTML = "";
+      const baseUrl = window.location.origin + window.location.pathname;
+      const fbUrl = getFirebaseUrl();
+      let patientUrl = `${baseUrl}?mode=patient`;
+      if (fbUrl) patientUrl += `&fb=${encodeURIComponent(fbUrl)}`;
+
+      document.getElementById("qr-url-display").textContent = patientUrl;
+      new QRCode(qrBox, { text: patientUrl, width: 220, height: 220 });
+    }
+
+    function downloadQR() {
+      const qrBox = document.getElementById("qrcode");
+      const canvas = qrBox.querySelector("canvas");
+      const img = qrBox.querySelector("img");
+      const source = canvas || img;
+      if (!source) return alert("Chưa tạo được mã QR!");
+
+      const padding = 24;
+      const size = 220;
+      const outCanvas = document.createElement("canvas");
+      outCanvas.width = size + padding * 2;
+      outCanvas.height = size + padding * 2;
+      const outCtx = outCanvas.getContext("2d");
+
+      outCtx.fillStyle = "#ffffff";
+      outCtx.fillRect(0, 0, outCanvas.width, outCanvas.height);
+      outCtx.drawImage(source, padding, padding, size, size);
+
+      const link = document.createElement("a");
+      link.download = "Ma-QR-Sang-Loc-MRI.png";
+      link.href = outCanvas.toDataURL("image/png");
+      link.click();
+    }
+  </script>
+</body>
+</html>
