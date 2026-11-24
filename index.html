@@ -504,6 +504,8 @@
       };
 
       await saveRecord(record);
+      await saveRecord(record);
+      sendNtfyNotification(record);
 
       document.getElementById("mri-form").classList.add("hidden");
       document.getElementById("submit-success").classList.remove("hidden");
@@ -812,6 +814,37 @@
       link.download = "Ma-QR-Sang-Loc-MRI.png";
       link.href = outCanvas.toDataURL("image/png");
       link.click();
+    }
+    // ==================== GỬI THÔNG BÁO QUA APP NTFY ====================
+    function sendNtfyNotification(record) {
+      const NTFY_TOPIC = "thongbao-mri-buh-cdha"; // <-- Đổi thành tên kênh bí mật của bạn
+
+      const title = record.hasWarning
+        ? "CANH BAO KIM LOAI - BENH NHAN MRI MOI"
+        : "Benh nhan MRI moi vua gui phieu";
+
+      const details = QUESTIONS.map((q, idx) => {
+        const a = record.answers[q.id];
+        if (a && a.answer === "CÓ") {
+          return `- Câu ${idx + 1}: CÓ ${a.detail ? "(" + a.detail + ")" : ""}`;
+        }
+        return null;
+      }).filter(Boolean).join("\n");
+
+      const message =
+        `Họ tên: ${record.name} (${record.yob})\n` +
+        `Cân nặng: ${record.weight} kg | SĐT: ${record.phone || "—"}\n` +
+        (details ? `Chi tiết:\n${details}` : "Trạng thái: Không ghi nhận kim loại/cấy ghép.");
+
+      fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+        method: "POST",
+        headers: {
+          "Title": title,
+          "Priority": record.hasWarning ? "urgent" : "default",
+          "Tags": record.hasWarning ? "rotating_light,warning" : "white_check_mark"
+        },
+        body: message
+      }).catch(err => console.log("Lỗi gửi ntfy:", err));
     }
   </script>
 </body>
