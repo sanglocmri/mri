@@ -339,6 +339,7 @@
 
   <script>
     // ==================== CẤU HÌNH 4 CÂU HỎI SONG NGỮ ====================
+    // ==================== CẤU HÌNH 8 CÂU HỎI SONG NGỮ ====================
     const QUESTIONS = [
       {
         id: "q1",
@@ -366,6 +367,37 @@
         vi: "Bạn có răng giả, máy trợ thính hoặc các thiết bị kim loại, điện tử hỗ trợ trên cơ thể hay không? Nếu có, ghi rõ.",
         en: "Do you have dentures, hearing aids, or any other metallic/electronic assistive devices on your body? If yes, please specify.",
         placeholder: "Ghi rõ loại thiết bị (Specify device)...",
+        highRisk: true
+      },
+      {
+        id: "q5",
+        vi: "Bạn có đang mang thai hay không?",
+        en: "Are you currently pregnant?",
+        placeholder: "Nếu có, ghi rõ thai bao nhiêu tuần (If yes, specify gestational age)...",
+        highRisk: true
+      },
+      {
+        id: "q6",
+        vi: "Bạn có sợ không gian kín không?",
+        en: "Do you have claustrophobia (fear of enclosed spaces)?",
+        placeholder: "Ghi chú thêm nếu có (Additional notes if any)...",
+        highRisk: true
+      },
+      // --- MỤC DÀNH CHO CA CÓ TIÊM THUỐC ---
+      {
+        id: "q7",
+        sectionTitle: "DÀNH CHO BỆNH NHÂN CÓ TIÊM THUỐC TƯƠNG PHẢN TỪ",
+        sectionSub: "For Contrast-Enhanced MRI Only",
+        vi: "Trước giờ bạn đã từng chụp MRI có tiêm thuốc tương phản từ chưa?",
+        en: "Have you ever had an MRI scan with contrast media before?",
+        placeholder: "Nếu có, có phản ứng bất thường nào không? (Any adverse reaction?)...",
+        highRisk: false
+      },
+      {
+        id: "q8",
+        vi: "Trước giờ bạn có dị ứng thuốc, thức ăn hoặc các dị nguyên khác hay không?",
+        en: "Have you ever had an allergy to medications, food, or other allergens?",
+        placeholder: "Ghi rõ tên thuốc, thức ăn hoặc dị nguyên bị dị ứng (Specify allergens)...",
         highRisk: true
       }
     ];
@@ -430,6 +462,12 @@
     function renderQuestions() {
       const container = document.getElementById("questions-container");
       container.innerHTML = QUESTIONS.map((q, idx) => `
+        ${q.sectionTitle ? `
+          <div class="pt-4 pb-1 border-b-2 border-amber-500">
+            <h3 class="font-bold text-amber-800 text-sm sm:text-base uppercase">💉 ${q.sectionTitle}</h3>
+            <p class="text-xs italic text-slate-500">${q.sectionSub}</p>
+          </div>
+        ` : ""}
         <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
           <div class="flex items-start justify-between gap-2">
             <div>
